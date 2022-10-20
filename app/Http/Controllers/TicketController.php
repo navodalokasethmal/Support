@@ -13,10 +13,39 @@ class TicketController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {
-        //
+    public function index(Request $request)
+{
+    $ticketsQuery = Ticket::query();
+
+    $q = $request->query('q');
+    $sortColumn = $request->query('sort', 'created_at');
+    $sortDir = $request->query('sort_dir') == 'asc' ? 'asc' : 'desc';
+    $sortableColumns = [
+        'customer_name',
+        'created_at',
+        'updated_at',
+        'status',
+    ];
+
+    // Searching
+    if ($q) {
+        $ticketsQuery->where('ref', 'LIKE', "%$q%")
+            ->orWhere('customer_name', 'LIKE', "%$q%")
+            ->orWhere('phone', 'LIKE', "%$q%")
+            ->orWhere('description', 'LIKE', "%$q%");
     }
+
+    // Sorting
+    if (in_array($sortColumn, $sortableColumns)) {
+        $ticketsQuery->orderBy($sortColumn, $sortDir);
+    }
+
+    $tickets = $ticketsQuery->paginate($request->query('per_page', 8));
+
+    return view('tickets.index', [
+        'tickets' => $tickets,
+    ]);
+}
 
     /**
      * Show the form for creating a new resource.
